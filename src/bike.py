@@ -9,11 +9,12 @@ class Bike:
     database and clients.
     """
 
-    def __init__(self, position, speed, battery, status, max_speed):
+    def __init__(self, id, position, speed, battery, status, max_speed):
         """
         Constructor setting the correct, self explanatory,
         values on it's attributes.
         """
+        self.id = id
         self.position = position
         self.speed = speed
         self.battery = battery
@@ -32,6 +33,18 @@ class Bike:
         Set the bike status.
         """
         self.status = status
+
+    def set_position(self, position):
+        """
+        
+        """
+        self.position = position
+
+    def get_position(self):
+        """
+        
+        """
+        return self.position
 
     def update_data(self, position, speed, battery):
         """
