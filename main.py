@@ -1,79 +1,69 @@
 """
-Main script for Spark bike rental simulation
+Main script for simulation
 """
-import random
+from src.data.datafetcher import DataFetcher
+from src.bike.bike_controller import BikeHandler
+from src.scenarios.trip import standard_trip
+from src.helpers.repeated_timer import RepeatedTimer
+import polyline
 
-from src.bike_controller import BikeHandler
-from src.repeated_timer import RepeatedTimer
-from src.scenarios import Scenarios
+url_update_bike = "http://localhost:4000/bike"
 
-class BikeSimulator:
+class Simulation:
     """
-    
+    Main simulator
     """
     def __init__(self):
         """
-        Constructor to initiate a simulation
+        Constructor
         """
-        self.bikes = [] # List to hold all BikeHandlers
-        self.rt = None # Attribute to host the thread that generates scenarios
-        self.pulse_timer = 10 # Time rate to execute scenario generating
-        self.scenarios = Scenarios() # Scenarios instance, holds logic for the outcomes
+        self.idle_bikes = []
 
-    def add_bike(self, bike):
+    def init_bikes(self, bikes):
         """
-        Add a BikeHandler to it's list
+        Create Bikehandlers and bikes from API result
         """
-        self.bikes.append(
-            BikeHandler(
-                bike["id"],
-                bike["position"],
-                bike["speed"],
-                bike["battery"],
-                bike["status"],
-                bike["max_speed"]
-                )
-            )
+        for b in bikes:
+            self.idle_bikes.append(BikeHandler(b["id"], b["Position"], b["Speed"], b["Battery"], b["Status"]))
 
-    def initiate_bikes(self):
+    def set_chapters(self):
         """
-        *** PLACEHOLDER FUNCTION / NOT YET IMPLEMENTED***
-        Fetch all bikes from the database, format them and initiate them as Bike objects.
+        Set chapters for x bikes
         """
-        # Make a fetch
-        bikes = [] # Place fetch in list
-        for bike in bikes: # Go through every bike
-            self.add_bike(bike) # Create a Bike object
+        for i in range(10):
+            self.idle_bikes[i].set_chapters(standard_trip(self.idle_bikes[i].get_position()))
 
-    def simulator(self):
+    def loop(self):
         """
-        Main simulation function. Every x seconds it goes through every bike and generates a scenario.
+        Test loop
         """
-        for bike in self.bikes: # Go through every bike
-            self.scenarios.generate_scenario(bike) # Generate a scenario for the current bike
-       
-# Mock data
-bike_data = {
-    "id": "0",
-    "position": "55.609718195959864,13.000229772341523",
-    "speed": 15,
-    "battery": 87,
-    "status": 20,
-    "max_speed": 20
-}
+        for i in range(10):
+            self.idle_bikes[i].read_chapter()
 
-# Mock data
-bike_data2 = {
-    "id": "1",
-    "position": "55.609718195959864,13.000229772341523",
-    "speed": 13,
-    "battery": 15,
-    "status": 20,
-    "max_speed": 20
-}
+def main():
+    """
+    Main function
+    """
+    df = DataFetcher("http://localhost:4000/")
+    users = df.fetch("user")
+    bikes = df.fetch("bike")
 
-simulator = BikeSimulator() # Create a simulator instance
+    S = Simulation()
+    S.init_bikes(bikes)
+    S.set_chapters()
+    rt = RepeatedTimer(2, S.loop)
+    # df = DataFetcher("http://localhost:4000/")
 
-simulator.add_bike(bike_data) # Add mock
-simulator.add_bike(bike_data2) # Add mock
-simulator.rt = RepeatedTimer(simulator.pulse_timer, simulator.simulator) # Initiate the simulator thread
+    # users = df.fetch("user")
+    # bikes = df.fetch("bike")
+    
+    # idle_bikes = []
+
+    # for b in bikes:
+    #     idle_bikes.append(BikeHandler(b["id"], b["Position"], b["Speed"], b["Battery"], b["Status"]))
+
+    # for i in range(10):
+    #     idle_bikes[i].set_chapters(standard_trip(idle_bikes[i].get_position()))
+
+if __name__ == '__main__':
+    main()
