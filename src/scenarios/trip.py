@@ -21,7 +21,7 @@ def plot_route(start, destination):
     """
     Get a list of coordinates that makes a trip
     """
-    route_url=f'http://router.project-osrm.org/route/v1/biking/{start[1]},{start[0]};{destination[1]},{destination[0]}?alternatives=true&geometries=polyline'
+    route_url=f'http://router.project-osrm.org/route/v1/biking/{start[1].strip()},{start[0]};{destination[1]},{destination[0]}?alternatives=true&geometries=polyline'
     r=requests.get(route_url)
     res=r.json()
     return polyline.decode(res["routes"][0]["geometry"])

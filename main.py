@@ -13,11 +13,12 @@ class Simulation:
     """
     Main simulator
     """
-    def __init__(self):
+    def __init__(self, num_bikes=10):
         """
         Constructor
         """
         self.idle_bikes = []
+        self.num_bikes = num_bikes
 
     def init_bikes(self, bikes):
         """
@@ -30,40 +31,31 @@ class Simulation:
         """
         Set chapters for x bikes
         """
-        for i in range(10):
+        for i in range(self.num_bikes):
             self.idle_bikes[i].set_chapters(standard_trip(self.idle_bikes[i].get_position()))
+            self.idle_bikes[i].change_status(20)
 
     def loop(self):
         """
         Test loop
         """
-        for i in range(10):
+        for i in range(self.num_bikes):
             self.idle_bikes[i].read_chapter()
 
 def main():
     """
     Main function
     """
+    num_bikes = 10
+    emit_frequency = 2
     df = DataFetcher("http://localhost:4000/")
     users = df.fetch("user")
     bikes = df.fetch("bike")
 
-    S = Simulation()
+    S = Simulation(num_bikes)
     S.init_bikes(bikes)
     S.set_chapters()
-    rt = RepeatedTimer(2, S.loop)
-    # df = DataFetcher("http://localhost:4000/")
-
-    # users = df.fetch("user")
-    # bikes = df.fetch("bike")
-    
-    # idle_bikes = []
-
-    # for b in bikes:
-    #     idle_bikes.append(BikeHandler(b["id"], b["Position"], b["Speed"], b["Battery"], b["Status"]))
-
-    # for i in range(10):
-    #     idle_bikes[i].set_chapters(standard_trip(idle_bikes[i].get_position()))
+    rt = RepeatedTimer(emit_frequency, S.loop)
 
 if __name__ == '__main__':
     main()
