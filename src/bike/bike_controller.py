@@ -34,7 +34,7 @@ class BikeHandler:
             self.current_chapter = 0
         
         self.change_position(str(self.chapters[self.current_chapter])[1:-1])
-        print(self.get_data())
+        # print(self.get_data())
         self.emit_data()
 
         self.current_chapter += 1
@@ -69,4 +69,4 @@ class BikeHandler:
         """
         data = self.bike.get_data()
 
-        res = requests.post("http://localhost:4000/bike/" + str(data["bikeId"]), json=data)
+        res = requests.put("http://localhost:4000/bike/" + str(data["bikeId"]), json=data) # Ändra mig till PUT
