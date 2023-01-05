@@ -33,17 +33,20 @@ def points_between(a, b):
     """
     points_lat = []
     points_lon = []
-    d = int(distance.distance(a, b).m) # IF d > 0 ???
-    lat_dif = ((b[0] - a[0]) / d)
-    lon_dif = ((b[1] - a[1]) / d)
-    for i in range(0,d):
-        points_lat.append(a[0] + (lat_dif * i))
-    
-    for i in range(0,d):
-        points_lon.append(a[1] + (lon_dif * i))
+    d = distance.distance(a, b).m
+    if d > 5:
+        d = int(d / 5)
+        lat_dif = ((b[0] - a[0]) / d)
+        lon_dif = ((b[1] - a[1]) / d)
+        for i in range(0,d):
+            points_lat.append(a[0] + (lat_dif * i))
 
-    points = list(zip(points_lat, points_lon))
-    return points
+        for i in range(0,d):
+            points_lon.append(a[1] + (lon_dif * i))
+
+        points = list(zip(points_lat, points_lon))
+        return points
+    return[a,b]
 
 
 def fill_route(route):
@@ -56,9 +59,9 @@ def fill_route(route):
     return full_route
 
 
-def standard_trip(position, destination=None):
+def generate_route(position, destination=None):
     """
-    
+    Generate a trip
     """
     if destination:
         pos_list = position.split(",")
@@ -72,8 +75,5 @@ def standard_trip(position, destination=None):
     route = fill_route(route)
 
     return polyline.encode(route)
-
-    # return plot_route(positions[0], positions[1])
-
 
     
