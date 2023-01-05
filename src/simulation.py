@@ -20,7 +20,7 @@ class Simulation:
     """
     Main simulator
     """
-    def __init__(self, emit_frequency=5, generate_data=False, activation_chance=0.02):
+    def __init__(self, emit_frequency=5, generate_data=False, activation_chance=0.02, host="http://server:4000", udphost="bike-server"):
         """
         Constructor
         """
@@ -35,7 +35,7 @@ class Simulation:
         self.emit_frequency = emit_frequency
 
         # Create a http service
-        self.http = Http("http://server:4000")
+        self.http = Http(host)
 
         # Set activation chance attribute
         self.activation_chance = activation_chance
@@ -64,7 +64,7 @@ class Simulation:
         for k, v in self.bikes.items():
 
             # Take the data of each bike to create a bikehandler, match the bike id with route id to decode correct route
-            self.idle_bikes.append(BikeHandler(v["id"], v["Position"], v["Speed"], v["Battery"], v["Status"], polyline.decode(routes[k]), self.geofences[v["City"]]))
+            self.idle_bikes.append(BikeHandler(v["id"], v["Position"], v["Speed"], v["Battery"], v["Status"], polyline.decode(routes[k]), self.geofences[v["City"]], udphost))
 
     def setup(self):
         """
@@ -75,7 +75,7 @@ class Simulation:
         get_bikes()
 
         # Make sure the user knows about estimated time to generate new routes
-        os.system('clear')
+        print(chr(27) + "[2J")
         choice = input("Are you sure that you want to generate routes?\n- Expect a wait time of minimum 30 minutes.\n\n(y/N): ")
 
         # If choice is yes, proceed
@@ -93,6 +93,7 @@ class Simulation:
         # Define the haystack
         haystack = self.idle_bikes
 
+
         # Switch haystack if needed
         if type == "active":
             haystack = self.active_bikes
@@ -103,6 +104,9 @@ class Simulation:
             # If matched, return the index
             if int(hs.id) == int(needle):
                 return i
+        
+        # If no key found
+        return None
 
     def activate_from_app(self, bike, user, route):
         """
@@ -111,23 +115,24 @@ class Simulation:
         # Find the bike list index
         ix = self.get_bike_index("idle", bike)
 
-        # Add the selected route
-        self.idle_bikes[ix].chapters = polyline.decode(route)
+        if ix:
+            # Add the selected route
+            self.idle_bikes[ix].chapters = polyline.decode(route)
 
-        # Create and register a rent in the database
-        self.http.create_rent(user, bike)
+            # Create and register a rent in the database
+            self.http.create_rent(user, bike)
 
-        # Set the user to active
-        self.users[str(user)] = 1
+            # Set the user to active
+            self.users[str(user)] = 1
 
-        # Assign the user to the bike object
-        self.idle_bikes[ix].set_user(user)
+            # Assign the user to the bike object
+            self.idle_bikes[ix].set_user(user)
 
-        # Change the bike status to 'active'
-        self.idle_bikes[ix].change_status(20)
+            # Change the bike status to 'active'
+            self.idle_bikes[ix].change_status(20)
 
-        # Move the bike from 'idle' to 'active' in the simulation
-        self.active_bikes.append(self.idle_bikes.pop(ix))
+            # Move the bike from 'idle' to 'active' in the simulation
+            self.active_bikes.append(self.idle_bikes.pop(ix))
 
     def activate_bike(self, bikeId, i):
         """
@@ -165,7 +170,7 @@ class Simulation:
         self.active_bikes.append(self.idle_bikes.pop(i))
 
 
-    def deactivate_bike(self, i):
+    def deactivate_bike(self, i, status):
         """
         Deactivate a bike by ending a trip
         """
@@ -175,8 +180,8 @@ class Simulation:
         # Register that the rent has ended in the database
         self.http.end_rent(user)
 
-        # Change the bike status to 'available'
-        self.active_bikes[i].change_status(10)
+        # Change the bike status to desired code
+        self.active_bikes[i].change_status(status)
 
         # Emit the data to let the database know that bike is available
         self.active_bikes[i].bike.emit_data()
@@ -218,7 +223,7 @@ class Simulation:
             if answer:
 
                 # Pass the bike to the 'deactivate' function
-                self.deactivate_bike(i)
+                self.deactivate_bike(i, answer)
 
             # Sleep function to avoid sending all messages to bike server simultaneously
             time.sleep(0.00001)
@@ -251,7 +256,7 @@ class Simulation:
             toc2 = time.perf_counter() # Timer stop
 
             # Use Timers to output data in simulation window
-            os.system('clear') # Clear screen
+            print(chr(27) + "[2J") # Clear screen
 
             print(f"Total bikes: ----------- {self.total_bikes}") # Show total amount of bikes
             print(f"Total users: ----------- {self.total_users}\n") # Show total amount of bikes

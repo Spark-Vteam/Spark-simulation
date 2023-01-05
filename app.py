@@ -3,6 +3,7 @@ from flask import request
 from src.simulation import Simulation
 from src.helpers.routing import generate_route
 import threading
+import polyline
 
 
 
@@ -13,6 +14,12 @@ sim = Simulation()
 
 def worker():
     sim.start()
+    for item in sim.idle_bikes:
+        print(item.id)
+    return
+
+def worker2():
+    app.run(host='0.0.0.0', port=8000)
     return
 
 t = threading.Thread(target=worker)
@@ -51,4 +58,6 @@ def stop(bike_id):
 
 
 if __name__ == '__main__':
-	app.run(host='0.0.0.0', port=8000)
+	# app.run(host='0.0.0.0', port=8000)
+    s = threading.Thread(target=worker2)
+    s.start()

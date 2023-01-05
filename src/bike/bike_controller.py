@@ -10,7 +10,7 @@ class BikeHandler:
     Acts as a puppet master to the bike as
     it tells bike how to behave in a believable way.
     """
-    def __init__(self, id, position, speed, battery, status, chapters, geofences):
+    def __init__(self, id, position, speed, battery, status, chapters, geofences, host):
         """
         Constructor
         """
@@ -18,7 +18,7 @@ class BikeHandler:
         self.id = id
 
         # Create a Bike object to control
-        self.bike = Bike(id, position, speed, battery, status, 18, "bike-server", 9898, geofences)
+        self.bike = Bike(id, position, speed, battery, status, 18, host, 9898, geofences)
 
         # Assign the generated route as chapters
         self.chapters = chapters
@@ -40,6 +40,15 @@ class BikeHandler:
             # Update bike battery
             self.bike.set_battery(self.bike.get_battery() - 0.3)
 
+            # Check if bike is out of battery
+            if self.bike.get_battery() <= 3:
+
+                # Update bike status to out of battery
+                self.bike.set_status(30)
+                
+                # Return True to signal the simulation to deactivate the bike
+                return 30
+
             # Check if destination is reached
             if self.current_chapter >= len(self.chapters) - 1:
 
@@ -56,7 +65,7 @@ class BikeHandler:
 
 
                 # Return True to signal the simulation that the destination have been reached
-                return True
+                return 10
 
             # Update the bike's geo positional data
             self.bike.set_position(str(self.chapters[self.current_chapter])[1:-1].replace(" ", ""))
@@ -78,7 +87,7 @@ class BikeHandler:
             return False
         except TabError:
             self.change_status(50)
-            return True
+            return 50
 
     def reverse_chapters(self):
         """
