@@ -2,19 +2,16 @@
 Main script for simulation
 """
 import time
-import os
 import random
 import polyline
-from src.helpers.http import Http
-from src.helpers.repeated_timer import RepeatedTimer
-from src.bike.bike_controller import BikeHandler
-from src.scenarios.trip import standard_trip
 from src.helpers.setup import *
-from src.helpers.timer import timer_output
 from src.data.bikes import bikes
 from src.data.users import users
-from src.data.routes_encoded import routes
+from src.helpers.http import Http
 from src.data.geofences import geofences
+from src.helpers.timer import timer_output
+from src.data.routes_encoded import routes
+from src.bike.bike_controller import BikeHandler
 
 class Simulation:
     """
@@ -26,10 +23,6 @@ class Simulation:
         """
         # A switch to enable the activation iteration
         self.activation = False
-
-        # If argument is True, data is fetched and formated into files
-        if generate_data:
-            self.setup()
 
         # Set the interval for sending positional data to bike server
         self.emit_frequency = emit_frequency
@@ -66,23 +59,6 @@ class Simulation:
             # Take the data of each bike to create a bikehandler, match the bike id with route id to decode correct route
             self.idle_bikes.append(BikeHandler(v["id"], v["Position"], v["Speed"], v["Battery"], v["Status"], polyline.decode(routes[k]), self.geofences[v["City"]], udphost))
 
-    def setup(self):
-        """
-        Setup all data
-        """
-        # Generate data files
-        get_users()
-        get_bikes()
-
-        # Make sure the user knows about estimated time to generate new routes
-        print(chr(27) + "[2J")
-        choice = input("Are you sure that you want to generate routes?\n- Expect a wait time of minimum 30 minutes.\n\n(y/N): ")
-
-        # If choice is yes, proceed
-        if choice == "y" or choice == "Y":
-            get_routes()
-            encode_routes()
-
     def get_bike_index(self, type, id):
         """
         Get index for bike in active or idle list by id
@@ -92,7 +68,6 @@ class Simulation:
 
         # Define the haystack
         haystack = self.idle_bikes
-
 
         # Switch haystack if needed
         if type == "active":
@@ -127,6 +102,9 @@ class Simulation:
 
             # Assign the user to the bike object
             self.idle_bikes[ix].set_user(user)
+
+            # Change the bike speed'
+            self.idle_bikes[ix].set_speed(18)
 
             # Change the bike status to 'active'
             self.idle_bikes[ix].change_status(20)
@@ -166,6 +144,9 @@ class Simulation:
         # Change the bike status to 'active'
         self.idle_bikes[i].change_status(20)
 
+        # Change the bike speed'
+        self.idle_bikes[i].set_speed(18)
+
         # Move the bike from 'idle' to 'active' in the simulation
         self.active_bikes.append(self.idle_bikes.pop(i))
 
@@ -182,6 +163,9 @@ class Simulation:
 
         # Change the bike status to desired code
         self.active_bikes[i].change_status(status)
+
+        # Change the bike speed to 0
+        self.active_bikes[i].set_speed(0)
 
         # Emit the data to let the database know that bike is available
         self.active_bikes[i].bike.emit_data()
@@ -204,7 +188,7 @@ class Simulation:
         for i, bike in enumerate(self.idle_bikes):
 
             # If bike status is 'available' and the requirement of activation is achieved, proceed
-            if bike.bike.get_status() == 10 and random.random() < self.activation_chance:
+            if bike.bike.get_status() == 10 and random.random() < self.activation_chance and len(bike.chapters) > 25:
 
                 # Pass the bike to the 'activate' function
                 self.activate_bike(bike.get_id(), i)
@@ -248,38 +232,18 @@ class Simulation:
         # This loop calls the 'iterate' functions every 'emit_frequency' seconds
         while True:
             tic1 = time.perf_counter() # Timer start
+
             if self.activation:
                 self.iterate_activation()  # Idle bikes
-            toc1 = time.perf_counter() # Timer stop
-            tic2 = time.perf_counter() # Timer start
+
             self.iterate_active()      # Active bikes
+
             toc2 = time.perf_counter() # Timer stop
 
-            # Use Timers to output data in simulation window
-            print(chr(27) + "[2J") # Clear screen
-
-            print(f"Total bikes: ----------- {self.total_bikes}") # Show total amount of bikes
-            print(f"Total users: ----------- {self.total_users}\n") # Show total amount of bikes
-
-            print(f"Active users: ---------- {self.active_users} / {self.total_users}") # Show amount of active bikes
-            print(f"Active bikes: ---------- {len(self.active_bikes)} / {self.total_bikes}\n") # Show amount of active bikes
-
-            print(f"Bikes without power: --- {len(self.bikes_battery)} / {self.total_bikes}") # Show amount of empty bikes
-            print(f"Bike maintenance: ------ {len(self.bikes_maintenance)} / {self.total_bikes}") # Show amount of broken bikes
-            print(f"Finished rents: -------- {self.finished_rents}\n") # Show amount of finished rents
-
-            output1 = timer_output(toc1 - tic1, "activation", num_bikes=len(self.idle_bikes)) # Calculate total time to iterate idle bikes
-            output2 = timer_output(toc2 - tic2, "active", num_bikes=len(self.active_bikes)) # Calculate total time to iterate active bikes
-            output3 = timer_output(toc2 - tic1, "total", num_bikes=len(self.active_bikes)) # Calculate total time to make both iterations
-
-            print(output1) # Print total time to iterate idle bikes
-            print(output2) # Print total time to iterate active bikes
-            print(output3 + "\n") # Print total time to make both iterations
-
             try:
-                time.sleep(self.emit_frequency - (toc2 - toc1))
+                time.sleep(self.emit_frequency - (toc2 - tic1))
             except ValueError:
-                print(f"\n\nTotal time of the iteration was {toc2 - toc1} and exceded you emit frequency of {self.emit_frequency}")
+                print(f"\n\nTotal time of the iteration was {toc2 - tic1} and exceded you emit frequency of {self.emit_frequency}")
                 print(f"Consider lowering the 'activation_chance' or raise the 'emit_frequency'.")
                 print("Shutting down simulation..")
                 break

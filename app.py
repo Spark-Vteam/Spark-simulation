@@ -14,13 +14,9 @@ sim = Simulation()
 
 def worker():
     sim.start()
-    for item in sim.idle_bikes:
-        print(item.id)
-    return
 
 def worker2():
     app.run(host='0.0.0.0', port=8000)
-    return
 
 t = threading.Thread(target=worker)
 t.start()
@@ -38,6 +34,8 @@ def index():
 def enable_activation():
     sim.activation = True
 
+    return f"Starting simulation of activation"
+
 @app.route('/activate', methods=["POST"])
 def activate():
     bike_id = request.form['bike_id']
@@ -52,7 +50,7 @@ def activate():
 @app.route('/stop/<bike_id>', methods=["PUT"])
 def stop(bike_id):
     bike_index = sim.get_bike_index("active", bike_id)
-    sim.deactivate_bike(bike_index)
+    sim.deactivate_bike(bike_index, 10)
     return f"Bike {bike_id} stopped"
 
 

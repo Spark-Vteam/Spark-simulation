@@ -52,8 +52,24 @@ class BikeHandler:
             # Check if destination is reached
             if self.current_chapter >= len(self.chapters) - 1:
 
+                # If bike is in a no riding/parking area
+                if self.bike.get_status() == 21:
+
+                    # Set current chapter to first index
+                    self.current_chapter = 0
+
+                    # Reverse the trip
+                    self.chapters.reverse()
+
+                    # Return False to signal the simulation to not deactivate the bike
+                    return False
+
                 # Update the bike with final destination
-                self.bike.set_position(str(self.chapters[-1])[1:-1].replace(" ", ""))
+                status = self.bike.set_position(str(self.chapters[-1])[1:-1].replace(" ", ""))
+
+                # Check if the bike status was changed
+                if status:
+                    self.status_change(status)
 
                 # Reset and reverse the trip
                 self.chapters.reverse()
@@ -63,24 +79,15 @@ class BikeHandler:
 
                 self.current_chapter = 0
 
-
                 # Return True to signal the simulation that the destination have been reached
                 return 10
 
             # Update the bike's geo positional data
-            self.bike.set_position(str(self.chapters[self.current_chapter])[1:-1].replace(" ", ""))
+            status = self.bike.set_position(str(self.chapters[self.current_chapter])[1:-1].replace(" ", ""))
 
-            # Check if the chapter jump needs to be adjusted to a geofence interaction
-            max_speed = self.bike.get_max_speed()
-
-            if max_speed == 18:
-                self.jump = 5
-            elif max_speed == 10:
-                self.jump = 3
-                print(f"Bike: {self.id} in slow zone")
-            elif max_speed == 0:
-                print(f"Bike: {self.id} in no go zone")
-                self.jump = 1 # walking speed
+            # Check if the bike status was changed
+            if status:
+                self.status_change(status)
 
             # Increment the current chapter by the chapter jumper
             self.current_chapter += self.jump
@@ -88,6 +95,31 @@ class BikeHandler:
         except TabError:
             self.change_status(50)
             return 50
+
+    def status_change(self, status):
+        """
+        Update relative data when a status was changed in the bike
+        """
+        if status == 1:
+            self.jump = 5
+            self.set_speed(18)
+            return
+        if status < 20:
+            self.jump = 3
+            self.set_speed(10)
+            return
+        if status == 20:
+            self.jump = 5
+            self.set_speed(18)
+            return
+        if status == 30:
+            self.jump = 1
+            self.set_speed(0)
+            return
+        if status == 50:
+            self.jump = 5
+            self.set_speed(18)
+            return
 
     def reverse_chapters(self):
         """
@@ -98,6 +130,12 @@ class BikeHandler:
 
         # Reset chapter counter
         self.current_chapter = 0
+
+    def set_speed(self, speed):
+        """
+        Update the speed value
+        """
+        self.bike.set_speed(speed)
 
     def change_status(self, status):
         """

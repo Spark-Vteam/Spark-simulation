@@ -38,6 +38,9 @@ class Bike:
         """
         Update the bike's geo positional data
         """
+        # Variable to let the bike handler know if theres been a change in status
+        status_changed = False
+
         # Function called by physical bike which also supplies the data
         self.position = position
 
@@ -45,27 +48,49 @@ class Bike:
         gf = self.check_geofence()
 
         # If a match, proceed
-        if gf > 0:
+        if gf > 0 and gf != self.geofence:
+
+            # Set status change check to True
+            status_changed = gf
 
             # 10-19 is a slow zone where the second digit is the speed limit divided by 2
-            if gf <= 10:
+            if gf < 20:
+                self.set_status(21)
                 self.set_max_speed((gf-10)*2)
 
             # 20 is a no parking zone, the bike status 20 mean active while 21 mean active but not allowed to park
-            if gf <= 20:
-                self.set_status(21)
+            elif gf < 30:
+                self.set_status(22)
 
             # 30 is a no riding area
-            if gf <= 30:
+            elif gf < 40:
                 self.set_max_speed(0)
-                self.set_status(21)
+                self.set_status(23)
 
-        if gf == 0 and self.geofence != 0:
+            # 50 is a parking zone
+            elif gf <= 50:
+                self.set_status(24)
+
+        elif gf == 0 and self.geofence != 0:
+            # Set status change check to True
+            status_changed = 1
+
+            # Set status to current status without geofence addition
+            self.set_status(round(self.status/10)*10)
+
+            # Reset the geofence attribute
             self.geofence = 0
+
+            # Set max speed to maximum
             self.max_speed = 18
+
+        # Update geofence attribute
+        self.geofence = gf
 
         # Emit the new data to the bike server
         self.emit_data()
+
+        return status_changed
 
     def get_position(self):
         """
