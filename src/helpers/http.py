@@ -28,14 +28,13 @@ class Http:
         Create a rent through the API
         """
         #
-        requests.post(f"{self.url}/rent/user/{user}", data={"bikeId": bike})
+        requests.post(f"{self.url}/rent/create/{user}", data={"bikeId": bike})
 
     def get_rent(self, user):
         """
         Get a rent id based on user id 
         """
         response = urlopen(f"{self.url}/rent/active/{user}")
-
         return json.load(response)["data"][0]["id"]
 
     def end_rent(self, user):

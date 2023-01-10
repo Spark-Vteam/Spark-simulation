@@ -155,12 +155,16 @@ class Simulation:
         """
         Deactivate a bike by ending a trip
         """
+        print("i:",i)
+        print("status:",status)
+
         # Fetch the user
         user = self.active_bikes[i].get_user()
+        print(user)
 
         # Register that the rent has ended in the database
         self.http.end_rent(user)
-
+        
         # Change the bike status to desired code
         self.active_bikes[i].change_status(status)
 

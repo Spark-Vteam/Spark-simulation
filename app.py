@@ -36,12 +36,8 @@ def enable_activation():
 
     return f"Starting simulation of activation"
 
-@app.route('/activate', methods=["POST"])
-def activate():
-    bike_id = request.form['bike_id']
-    user_id = request.form['user_id']
-    position = request.form['position']
-    destination = request.form['destination']
+@app.route('/activate/<bike_id>/<user_id>/<position>/<destination>')
+def activate(bike_id, user_id, position, destination):
     route = generate_route(position, destination)
     sim.activate_from_app(bike_id, user_id, route)
 
