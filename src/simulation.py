@@ -17,7 +17,7 @@ class Simulation:
     """
     Main simulator
     """
-    def __init__(self, emit_frequency=5, generate_data=False, activation_chance=0.02, host="http://server:4000/v1", udphost="bike-server"):
+    def __init__(self, emit_frequency=5, generate_data=False, activation_chance=0.001, host="http://server:4000/v1", udphost="bike-server"):
         """
         Constructor
         """
