@@ -23,6 +23,7 @@ class Simulation:
         """
         # A switch to enable the activation iteration
         self.activation = False
+        self.read_active = True
 
         # Set the interval for sending positional data to bike server
         self.emit_frequency = emit_frequency
@@ -155,16 +156,12 @@ class Simulation:
         """
         Deactivate a bike by ending a trip
         """
-        print("i:",i)
-        print("status:",status)
-
         # Fetch the user
         user = self.active_bikes[i].get_user()
-        print(user)
 
         # Register that the rent has ended in the database
         self.http.end_rent(user)
-        
+
         # Change the bike status to desired code
         self.active_bikes[i].change_status(status)
 
@@ -175,7 +172,10 @@ class Simulation:
         self.active_bikes[i].bike.emit_data()
 
         # Move the bike from 'active' to 'idle' in the simulation
-        self.idle_bikes.append(self.active_bikes.pop(i))
+        if status == 10:
+            self.idle_bikes.append(self.active_bikes.pop(i))
+        elif status == 30:
+            self.active_bikes.pop(i)
 
         self.users[f"{user}"] = 0
 
@@ -183,6 +183,7 @@ class Simulation:
 
         # Increment the counter of finished rents
         self.finished_rents += 1
+        
 
     def iterate_activation(self):
         """
@@ -229,6 +230,21 @@ class Simulation:
             # Sleep function to avoid sending all messages to bike server simultaneously
             time.sleep(0.00001)
 
+    def deactivate_all(self):
+        """
+        Deactivate all active bikes
+        """
+        print("Deactivating all bikes")
+
+        while self.active_bikes:
+            for i, bike in enumerate(self.active_bikes):
+                self.deactivate_bike(i, 10)
+                time.sleep(0.001)
+        
+        self.read_active = True
+        self.start()
+
+
     def start(self):
         """
         Start the simulation with looping actions
@@ -240,14 +256,20 @@ class Simulation:
             if self.activation:
                 self.iterate_activation()  # Idle bikes
 
-            self.iterate_active()      # Active bikes
+            if self.read_active:
+                self.iterate_active()      # Active bikes
 
-            toc2 = time.perf_counter() # Timer stop
+                toc2 = time.perf_counter() # Timer stop
 
-            try:
+                if toc2 - tic1 > 5:
+                    self.deactivate_all()
+                    print(f"\n\nTotal time of the iteration was {toc2 - tic1} and exceded you emit frequency of {self.emit_frequency}")
+                    print(f"Consider lowering the 'activation_chance' or raise the 'emit_frequency'.")
+                    print("\nShutting down simulation safely..")
+                    
+                    break
+
                 time.sleep(self.emit_frequency - (toc2 - tic1))
-            except ValueError:
-                print(f"\n\nTotal time of the iteration was {toc2 - tic1} and exceded you emit frequency of {self.emit_frequency}")
-                print(f"Consider lowering the 'activation_chance' or raise the 'emit_frequency'.")
-                print("Shutting down simulation..")
-                break
+
+            else:
+                self.deactivate_all()

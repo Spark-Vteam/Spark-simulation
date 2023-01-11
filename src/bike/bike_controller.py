@@ -36,65 +36,65 @@ class BikeHandler:
         """
         Read a chapter, makes the bike take the next step of the simulated trip
         """
-        try:
-            # Update bike battery
-            self.bike.set_battery(self.bike.get_battery() - 0.3)
+        # Update bike battery
+        self.bike.set_battery(self.bike.get_battery() - 0.2)
 
-            # Check if bike is out of battery
-            if self.bike.get_battery() <= 3:
+        # Check if bike is out of battery
+        if self.bike.get_battery() <= 3:
+            print("1")
+            # Update bike status to out of battery
+            self.bike.set_status(30)
+            
+            # Return True to signal the simulation to deactivate the bike
+            return 30
 
-                # Update bike status to out of battery
-                self.bike.set_status(30)
-                
-                # Return True to signal the simulation to deactivate the bike
-                return 30
+        # Check if destination is reached
+        if self.current_chapter >= len(self.chapters) - 1:
+            print("2")
 
-            # Check if destination is reached
-            if self.current_chapter >= len(self.chapters) - 1:
+            # If bike is in a no riding/parking area
+            if self.bike.get_status() == 21:
+                print("3")
 
-                # If bike is in a no riding/parking area
-                if self.bike.get_status() == 21:
-
-                    # Set current chapter to first index
-                    self.current_chapter = 0
-
-                    # Reverse the trip
-                    self.chapters.reverse()
-
-                    # Return False to signal the simulation to not deactivate the bike
-                    return False
-
-                # Update the bike with final destination
-                status = self.bike.set_position(str(self.chapters[-1])[1:-1].replace(" ", ""))
-
-                # Check if the bike status was changed
-                if status:
-                    self.status_change(status)
-
-                # Reset and reverse the trip
-                self.chapters.reverse()
-
-                # Update the bike status to available
-                self.bike.set_status(10)
-
+                # Set current chapter to first index
                 self.current_chapter = 0
 
-                # Return True to signal the simulation that the destination have been reached
-                return 10
+                # Reverse the trip
+                self.chapters.reverse()
 
-            # Update the bike's geo positional data
-            status = self.bike.set_position(str(self.chapters[self.current_chapter])[1:-1].replace(" ", ""))
+                # Return False to signal the simulation to not deactivate the bike
+                return False
+
+            # Update the bike with final destination
+            status = self.bike.set_position(str(self.chapters[-1])[1:-1].replace(" ", ""))
 
             # Check if the bike status was changed
             if status:
                 self.status_change(status)
 
-            # Increment the current chapter by the chapter jumper
-            self.current_chapter += self.jump
-            return False
-        except TabError:
-            self.change_status(50)
-            return 50
+            # Reset and reverse the trip
+            self.chapters.reverse()
+
+            # Update the bike status to available
+            self.bike.set_status(10)
+
+            self.current_chapter = 0
+            print("4")
+
+            # Return True to signal the simulation that the destination have been reached
+            return 10
+
+        # Update the bike's geo positional data
+        status = self.bike.set_position(str(self.chapters[self.current_chapter])[1:-1].replace(" ", ""))
+
+        # Check if the bike status was changed
+        if status:
+            self.status_change(status)
+            print("5")
+
+        # Increment the current chapter by the chapter jumper
+        self.current_chapter += self.jump
+        return False
 
     def status_change(self, status):
         """
