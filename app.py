@@ -18,6 +18,9 @@ def worker():
 def worker2():
     app.run(host='0.0.0.0', port=8000)
 
+def worker3():
+    sim.deactivate_all()
+
 t = threading.Thread(target=worker)
 t.start()
 
@@ -30,8 +33,11 @@ def start():
 def index():
     return "Flask server"
 
-@app.route('/enable-activation')
-def enable_activation():
+@app.route('/sim_start')
+def sim_start():
+    if sim.read_active == False:
+        return "Command failed, simulation is still shutting down"
+        
     sim.activation = True
 
     return f"Starting simulation of activation"
@@ -43,11 +49,19 @@ def activate(bike_id, user_id, position, destination):
 
     return "Trip started"
 
-@app.route('/stop/<bike_id>', methods=["PUT"])
+@app.route('/stop/<bike_id>')
 def stop(bike_id):
     bike_index = sim.get_bike_index("active", bike_id)
     sim.deactivate_bike(bike_index, 10)
     return f"Bike {bike_id} stopped"
+
+@app.route('/sim_stop')
+def stop_sim():
+    sim.activation = False
+    sim.read_active = False
+
+    t = threading.Thread(target=worker3)
+    return "Simulation stopped"
 
 
 

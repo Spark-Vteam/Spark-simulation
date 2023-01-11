@@ -19,7 +19,7 @@ class Http:
         """
         Fetch users, return dictionary
         """
-        response = urlopen(self.url + endpoint)
+        response = urlopen(self.url + endpoint, headers={'key': '18c364b7-641e-440e-849a-20a3c67036a1'})
 
         return json.load(response)["data"]
 
@@ -28,21 +28,20 @@ class Http:
         Create a rent through the API
         """
         #
-        requests.post(f"{self.url}/rent/create/{user}", data={"bikeId": bike})
+        requests.post(f"{self.url}/rent/create/{user}", data={"bikeId": bike}, headers={'key': '18c364b7-641e-440e-849a-20a3c67036a1'})
 
     def get_rent(self, user):
         """
         Get a rent id based on user id 
         """
-        response = urlopen(f"{self.url}/rent/active/{user}")
-        return json.load(response)["data"][0]["id"]
+        response = requests.get(f"{self.url}/rent/active/{user}", headers={'key': '18c364b7-641e-440e-849a-20a3c67036a1'})
+        return response.json()["data"][0]["id"]
 
     def end_rent(self, user):
         """
         End a rent through the API
         """
-        #
-        requests.put(f"{self.url}/rent/{self.get_rent(user)}")
+        requests.put(f"{self.url}/rent/{self.get_rent(user)}", headers={'key': '18c364b7-641e-440e-849a-20a3c67036a1'})
         
 
     
